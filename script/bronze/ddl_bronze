@@ -1,1 +1,98 @@
+Result: Creates a procedure and loads data into the respective table and since the data was starting from 
+2nd row and first row was just of no use so it says first row = 2
+
+
+
+
+
+
+
+Exec bronze.load_bronze
+
+Create or Alter procedure bronze.load_bronze As
+Begin
+Print '===========================================';
+Print'Loading Bronze Layer';
+Print '===========================================';
+
+Print '-------------------------------------------';
+Print 'Loading CRM tabless';
+Print '-------------------------------------------';
+
+Print '>> Truncating table: bronze.crm_cust_info'
+truncate table bronze.crm_cust_info;
+
+Print '>> Inserting data into : bronze.crm_cust_info'
+BULK INSERT bronze.crm_cust_info
+from 'D:\sql-data-warehouse-project\sql-data-warehouse-project\datasets\source_crm\cust_info.csv'
+with(
+	firstrow = 2,
+	fieldterminator = ',', 
+	tablock
+); 
+Print '>> Truncating table: bronze.crm_prd_info'
+truncate table bronze.crm_prd_info;
+
+Print '>> Inserting data into : bronze.crm_prd_info'
+BULK INSERT bronze.crm_prd_info
+from 'D:\sql-data-warehouse-project\sql-data-warehouse-project\datasets\source_crm\prd_info.csv'
+with(
+	firstrow = 2,
+	fieldterminator = ',', 
+	tablock
+); 
+
+Print '>> Truncating table: bronze.crm_sales_details'
+truncate table bronze.crm_sales_details;
+
+Print '>> Inserting data into : bronze.crm_sales_details'
+BULK INSERT bronze.crm_sales_details
+from 'D:\sql-data-warehouse-project\sql-data-warehouse-project\datasets\source_crm\sales_details.csv'
+with(
+	firstrow = 2,
+	fieldterminator = ',', 
+	tablock
+); 
+
+Print '-------------------------------------------';
+Print 'Loading ERP tabless';
+Print '-------------------------------------------';
+
+Print '>> Truncating table: bronze.erp_loc_a101'
+truncate table bronze.erp_loc_a101;
+
+Print '>> Inserting data into : bronze.erp_loc_a101'
+Bulk insert bronze.erp_loc_a101
+from 'D:\sql-data-warehouse-project\sql-data-warehouse-project\datasets\source_erp\LOC_A101.csv'
+with(
+	firstrow = 2,
+	fieldterminator = ',', 
+	tablock
+); 
+
+Print '>> Truncating table: bronze.erp_cust_az12'
+truncate table bronze.erp_cust_az12;
+
+Print '>> Inserting data into : bronze.erp_cust_az12'
+Bulk insert bronze.erp_cust_az12
+from 'D:\sql-data-warehouse-project\sql-data-warehouse-project\datasets\source_erp\CUST_AZ12.csv'
+with(
+	firstrow = 2,
+	fieldterminator = ',', 
+	tablock
+); 
+
+Print '>> Truncating table: bronze.erp_px_cat_g1v2'
+truncate table bronze.erp_px_cat_g1v2;
+
+Print '>> Inserting data into : bronze.erp_px_cat_g1v2'
+BUlk insert bronze.erp_px_cat_g1v2
+from 'D:\sql-data-warehouse-project\sql-data-warehouse-project\datasets\source_erp\PX_CAT_G1V2.csv'
+with(
+	firstrow = 2,
+	fieldterminator = ',', 
+	tablock
+);  
+END
+
 
