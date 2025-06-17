@@ -1,4 +1,4 @@
-Result: Creates a procedure and loads data into the respective table and since the data was starting from 
+Result: Creates a procedure and loads data into the respective table and since the data using bulk was starting from 
 2nd row and first row was just of no use so it says first row = 2
 
 
