@@ -1,0 +1,73 @@
+ This script creates views for the Gold layer in the data warehouse. 
+    The Gold layer represents the final dimension and fact tables (Star Schema)
+
+    Each view performs transformations and combines data from the Silver layer 
+    to produce a clean, enriched, and business-ready dataset.
+
+
+--Created view of final table that joins the surrogate key from both the views
+
+create view gold.fact_sales as
+select 
+sl.sls_ord_num as order_number,
+pd.product_key,
+ci.customer_key,
+sl.sls_order_dt as order_date,
+sl.sls_ship_dt as ship_date,
+sl.sls_due_dt as due_date,
+sl.sls_sales as sales_amount,
+sl.sls_quantity as sales_quantity,
+sl.sls_price as sales_price
+from silver.crm_sales_details sl
+left join gold.dim_products pd
+on sl.sls_prd_key = pd.product_number
+left join gold.dim_customers ci 
+on sl.sls_cust_id = ci.customer_id; 
+
+--Created view for products joining table silver.erp_px_cat_g1v2 
+
+Create View gold.dim_products as 
+
+Select 
+	row_number() over(order by pd.prd_start_date, pd.prd_key) as product_key,
+	pd.prd_id as product_id,
+	pd.prd_key as product_number,
+	pd.prd_nm as product_name,
+	pd.cat_id as category_id,
+	pc.cat as category,
+	pc.subcat as subcategory,
+	pc.maintenance,
+	pd.prd_cost as cost,
+	pd.prd_line as product_line,
+	pd.prd_start_date as start_dates
+from silver.crm_prd_info pd
+left join silver.erp_px_cat_g1v2 pc
+on pd.cat_id = pc.id
+Where prd_end_date is null;
+
+-- Created View for customer that joins two tables which are erp_cust_az12 & erp_cust_loc_a101
+
+Create View gold.dim_customers as
+
+Select 
+	row_number() over(order by cst_id) as customer_key,  --To give unique id surrogate key
+	ci.cst_id as customer_id,
+	ci.cst_key as customer_number,
+	ci.cst_firstname as first_name,
+	ci.cst_lastname as last_name,
+	la.cntry as country,
+	ci.cst_material_status as marital_status,
+	Case When ci.cst_gndr != 'n/a' Then ci.cst_gndr  ---- CRM is master table
+		 Else Coalesce(ca.gen, 'n/a')
+	End gender, 
+	ca.bdate as birth_date,
+	ci.cst_create_date as create_date
+	
+	
+from silver.crm_cust_info ci
+left join silver.erp_cust_az12 ca
+on ci.cst_key = ca.cid
+left join silver.erp_loc_a101 la
+on ci.cst_key = la.cid;
+
+
