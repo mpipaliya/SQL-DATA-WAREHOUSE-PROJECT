@@ -1,3 +1,7 @@
+/* This script performs ETL(extract, transform, load) process to 'silver' schema tables from the 'bronze' schema /*
+
+
+
 create or Alter procedure silver.load_silver as
 begin
 
