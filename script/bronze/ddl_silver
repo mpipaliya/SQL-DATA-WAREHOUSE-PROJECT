@@ -1,0 +1,167 @@
+create or Alter procedure silver.load_silver as
+begin
+
+---CRM product info
+Print '>> Truncating table: silver.crm_prd_info';
+truncate table silver.crm_prd_info;
+
+Print '>> Inserting data into : silver.crm_prd_info';
+Insert into silver.crm_prd_info(
+prd_id,
+cat_id,
+prd_key,
+prd_nm,
+prd_cost,
+prd_line,
+prd_start_date,
+prd_end_date
+)
+Select 
+prd_id,
+Replace(Substring(prd_key, 1,5), '-','_' ) cat_id,
+SUBSTRING(prd_key, 7, Len(prd_key)) prd_key,
+prd_nm,
+IsNUll (prd_cost,0) as prd_cost,
+Case upper (trim(prd_line))
+	 when 'M' Then 'mountain'
+	 when 'R' Then 'Road'
+	 when 'S' Then 'Other Sales'
+	 when 'T' Then 'touring'
+	 Else 'n/a'
+End as prd_line,
+Cast (prd_start_date as date) as prd_start_dt,
+Cast (Lead (prd_start_date) Over(Partition by prd_key Order by prd_start_date)-1 as date) as prd_end_dt
+FROM bronze.crm_prd_info; 
+
+---CRM customer Info
+
+Print '>> Truncating table: silver.crm_cust_info';
+truncate table silver.crm_cust_info;
+
+Print '>> Inserting data into : silver.crm_cust_info';
+Insert into silver.crm_cust_info (
+cst_id,
+cst_key,
+cst_firstname,
+cst_lastname,
+cst_material_status,
+cst_gndr,
+cst_create_date
+)
+select 
+cst_id,
+cst_key,
+Trim (cst_firstname) cst_firstname,
+Trim (cst_lastname) cst_lastname,
+
+case when Upper(Trim(cst_material_status)) = 'S' then 'Single'
+	  when Lower(Trim(cst_material_status)) = 'M' then 'Married'
+	  else 'n/a'
+end cst_material_status,
+
+case when Upper(Trim(cst_gndr)) = 'F' then 'Female'
+	 when Lower(Trim(cst_gndr)) = 'M' then 'Male'
+	 Else 'n/a'
+End cst_gndr,
+cst_create_date
+from(
+select *,
+ROW_NUMBER() Over(partition by cst_id order by cst_create_date desc) as flag_last
+from bronze.crm_cust_info 
+Where cst_id is not null 
+)t Where flag_last = 1;
+
+--Crm sales info
+
+Print '>> Truncating table: silver.crm_sales_details';
+truncate table silver.crm_sales_details;
+
+Print '>> Inserting data into : silver.crm_sales_details';
+Insert into silver.crm_sales_details (
+sls_ord_num, 
+sls_prd_key, 
+sls_cust_id,
+sls_order_dt,
+sls_ship_dt,
+sls_due_dt,
+sls_sales, 
+sls_quantity,
+sls_price
+)
+
+SELECT 
+sls_ord_num,
+sls_prd_key,
+sls_cust_id,
+Case when sls_order_dt <= 0 or LEN(sls_order_dt) != 8 then null
+	 Else CAST(cast(sls_order_dt as varchar) as Date)
+End as sls_order_dt,
+Case when sls_ship_dt <= 0 or LEN(sls_ship_dt) != 8 then null
+	 Else CAST(cast(sls_ship_dt as varchar) as Date)
+End as sls_ship_dt,
+Case when sls_due_dt <= 0 or LEN(sls_due_dt) != 8 then null
+	 Else CAST(cast(sls_due_dt as varchar) as Date)
+End as sls_due_dt,
+case when sls_sales is null or sls_sales <=0 or sls_sales != sls_quantity * ABS(sls_price)
+	 then sls_quantity * ABS(sls_price)
+	Else sls_sales
+End as sls_sales,
+sls_quantity,
+case when sls_price is null or sls_price <=0 
+	  then sls_sales / Nullif(sls_quantity, 0)
+	 Else sls_price 
+End as sls_price
+from bronze.crm_sales_details
+
+Print '>> Truncating table: silver.erp_cust_az12';
+truncate table silver.erp_cust_az12;
+
+Print '>> Inserting data into : silver.erp_cust_az12';
+Insert into silver.erp_cust_az12 (cid, bdate, gen)
+select 
+Case when cid like 'NAS%' then Substring(cid, 4, len(cid))
+	 Else cid
+End as cid,
+
+case when bdate > GETDATE() Then Null 
+	 else bdate
+End as bdate,
+case when Upper(Trim(gen)) IN ('F', 'Female') then 'Female'
+	 when UPPER(Trim(gen)) In ('M', 'Male')then 'Male'
+	 Else 'n/a'
+End gen
+from bronze.erp_cust_az12; 
+
+
+Print '>> Truncating table: silver.erp_loc_a101';
+truncate table silver.erp_loc_a101;
+
+Print '>> Inserting data into : silver.erp_loc_a101';
+Insert into silver.erp_loc_a101 (cid,cntry)
+select 
+Replace(cid,'-','')cid,
+Case When trim(cntry) = 'DE' then 'Germany'
+	 when trim(cntry) in ('US', 'USA') then 'United states'
+	 when trim(cntry) = '' or cntry is null then 'n/a'
+	 else trim(cntry)
+End cntry
+from bronze.erp_loc_a101; 
+
+
+Print '>> Truncating table: silver.erp_px_cat_g1v2';
+truncate table silver.erp_px_cat_g1v2;
+
+Print '>> Inserting data into : silver.erp_px_cat_g1v2';
+Insert into silver.erp_px_cat_g1v2(
+id,
+cat,
+subcat,
+maintenance) 
+
+Select 
+id,
+cat,
+subcat,
+maintenance
+from bronze.erp_px_cat_g1v2;
+End
